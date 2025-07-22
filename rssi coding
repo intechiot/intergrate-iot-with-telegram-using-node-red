@@ -1,0 +1,103 @@
+#include <WiFi.h>
+#include <MQTT.h>
+#include <ArduinoJson.h>
+
+// WiFi credentials
+const char ssid[] = "wifi name";
+const char pass[] = "wifi password";
+
+// MQTT settings
+const char mqttHost[] = "broker.hivemq.com";  // or your local broker IP
+const char *mqtt_topic = "esp32/rssi";
+const char *mqtt_client_id = "esp32_rssi_client";  // Make this unique
+
+WiFiClient net;
+MQTTClient mqtt;
+
+String nama = "IN-Tech IoT";
+unsigned long now = 0;
+
+void mqttConnect() {
+  Serial.print("Checking ESP32 Wi-Fi ...");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println(" CONNECTED.");
+
+  Serial.printf("Connecting to MQTT broker: %s ...", mqttHost);
+  while (!mqtt.connect(mqtt_client_id)) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println(" CONNECTED.");
+}
+
+void connectToWiFi() {  // Renamed from setup_wifi for consistency
+  delay(10);
+  WiFi.begin(ssid, pass);
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void connectToMQTT() {  // Added this function for consistency
+  mqttConnect();
+}
+
+void setup() {
+  Serial.begin(115200);
+  connectToWiFi();
+  mqtt.begin(mqttHost, net);
+  connectToMQTT();
+}
+
+void loop() {
+  mqtt.loop();  // Maintain MQTT connection
+  
+  // Reconnect if connection is lost
+  if (WiFi.status() != WL_CONNECTED) {
+    connectToWiFi();
+  }
+
+  if (!mqtt.connected()) {
+    connectToMQTT();
+  }
+  
+// In the loop() function, replace the JSON construction with:
+if (millis() - now >= 5000) {
+    now = millis();
+    
+    // Get RSSI value
+    long rssi = WiFi.RSSI();
+
+    Serial.println("==================================");
+    Serial.print("RSSI: ");
+    Serial.print(rssi);
+    Serial.println(" dBm");
+
+    // Create JSON data (ArduinoJson v5 syntax)
+    StaticJsonBuffer<200> jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    root["name"] = nama;
+    root["rssi"] = rssi;  // Send as number
+    
+    String jsonData;
+    root.printTo(jsonData);
+    
+    Serial.print("Published: ");
+    Serial.println(jsonData);
+
+    // Publish to MQTT
+    mqtt.publish(mqtt_topic, jsonData);
+}
+}
