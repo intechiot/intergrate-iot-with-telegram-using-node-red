@@ -1,0 +1,136 @@
+[
+    {
+        "id": "a50dbde6a6c4a16e",
+        "type": "tab",
+        "label": "Flow 6",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "32da0a4d2fe59daf",
+        "type": "mqtt in",
+        "z": "a50dbde6a6c4a16e",
+        "name": "ESP32 RSSI Data",
+        "topic": "esp32/rssi",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "b5b4f7a9.0b1c5",
+        "nl": false,
+        "rap": true,
+        "inputs": 0,
+        "x": 250,
+        "y": 160,
+        "wires": [
+            [
+                "387e6e542c5a50e0",
+                "f04ec1e031cf5827"
+            ]
+        ]
+    },
+    {
+        "id": "387e6e542c5a50e0",
+        "type": "debug",
+        "z": "a50dbde6a6c4a16e",
+        "name": "Debug RSSI",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 450,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "f04ec1e031cf5827",
+        "type": "function",
+        "z": "a50dbde6a6c4a16e",
+        "name": "Process RSSI",
+        "func": "// First, try to parse the payload if it's a string\nif (typeof msg.payload === 'string') {\n    try {\n        msg.payload = JSON.parse(msg.payload);\n    } catch (e) {\n        node.warn(\"Failed to parse payload as JSON: \" + msg.payload);\n        return null;\n    }\n}\n\n// Check if we have a valid payload object\nif (!msg.payload || typeof msg.payload !== 'object') {\n    node.warn(\"Invalid payload received: \" + JSON.stringify(msg.payload));\n    return null;\n}\n\n// Debug: log the entire payload\nnode.log(\"Received payload: \" + JSON.stringify(msg.payload));\n\nvar nama = msg.payload.name || msg.payload.nama; // handle both cases\nvar rssi = msg.payload.rssi;\n\nif (nama === \"IN-Tech IoT\") {\n    var telegramMsg = {\n        payload: {\n            chatId: 790209289,\n            type: 'message',\n            content: `This is \"${nama}\" board.\\nSensors Data:\\nRSSI = ${rssi} dBm`\n        }\n    };\n    return telegramMsg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 240,
+        "wires": [
+            [
+                "3d454d46b7289be9"
+            ]
+        ]
+    },
+    {
+        "id": "3d454d46b7289be9",
+        "type": "telegram sender",
+        "z": "a50dbde6a6c4a16e",
+        "name": "fbbbbdf",
+        "bot": "a8367a59d689a6bc",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 640,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "b5b4f7a9.0b1c5",
+        "type": "mqtt-broker",
+        "name": "Local MQTT",
+        "broker": "broker.hivemq.com",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "5",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "a8367a59d689a6bc",
+        "type": "telegram bot",
+        "botname": "rssi",
+        "usernames": "",
+        "chatids": "790209289",
+        "baseapiurl": "",
+        "updatemode": "polling",
+        "pollinterval": 300,
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": 6667,
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbotport": 8443,
+        "publicbotport": 8443,
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    }
+]
